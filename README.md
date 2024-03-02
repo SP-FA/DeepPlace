@@ -20,7 +20,7 @@
 
 
 ## 1. Requirements
-安装环境的过程中会出现很多很多很多的问题，我会尽量找到规避问题的方法，并且整理出来。
+安装环境的过程中会出现很多很多很多的问题，我会尽量找到规避问题的方法，并且整理出来。注：只能在 linux 系统上运行。
 
 1. 安装 PyTorch
     ```commandline
@@ -40,7 +40,7 @@
     ```commandline
     conda install -c dglteam dgl-cuda10.2
     ```
-5. 安装 DreamPlace：[参考文章](https://blog.csdn.net/SP_FA/article/details/134887441?spm=1001.2014.3001.5501)
+5. 安装 DreamPlace：[参考文章](https://blog.csdn.net/SP_FA/article/details/134887441?spm=1001.2014.3001.5501)（本项目已自带，无需安装）
 
 ## 2. Training
 
