@@ -10,6 +10,7 @@
 > 
 > [文章速通](https://blog.csdn.net/SP_FA/article/details/134083867?csdn_share_tail=%7B%22type%22%3A%22blog%22%2C%22rType%22%3A%22article%22%2C%22rId%22%3A%22134083867%22%2C%22source%22%3A%22SP_FA%22%7D)
 
+<br>
 
 # 关于此项目
 
@@ -18,6 +19,7 @@
 1. 使代码更易使用：原项目似乎在安装环境、运行代码方面有诸多问题，而且不方便更换数据集，不方便调整超参。这个项目致力于修复这些问题，使得大家可以快速运行 DeepPlace 代码，而不是像我一样调试好几天。
 2. 在 [MaskPlace: Fast Chip Placement via Reinforced Visual Representation Learning](https://arxiv.org/abs/2211.13382) 这篇文章中提出了一个调整 DeepPlace 架构的方式 DeepPlace-no-Overlap，也就是禁止 DeepPlace 放置时出现重叠的情况，这是一个很好的思路，于是我通过自己的方式将其实现。
 
+<br>
 
 ## 1. Requirements
 安装环境的过程中会出现很多很多很多的问题，我会尽量找到规避问题的方法，并且整理出来。注：只能在 linux 系统上运行。
@@ -41,6 +43,8 @@
     conda install -c dglteam dgl-cuda10.2
     ```
 5. 安装 DreamPlace：[参考文章](https://blog.csdn.net/SP_FA/article/details/134887441?spm=1001.2014.3001.5501)（本项目已自带，无需安装）
+
+<br>
 
 ## 2. Training
 
@@ -79,6 +83,7 @@ python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 
 
 [//]: # (```)
 
+<br>
 
 ## 3. 关于 DeepPlace-no-Overlap 的实现
 在实现过程中对代码做出了如下改动：
@@ -87,13 +92,13 @@ python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 
 3. 由于没有了 macro 之间的重叠，因此计算 reward 的时候也就可以不用考虑 Congestion，因此对计算 reward 的方法进行了修改。
 4. 为了保证正确性，我尽可能少的在原代码上进行修改，因此代码可能非常冗余，请多包含。
 
----
+<br>
 
 # Todo list
 1. 总结环境配置方法以及问题
 2. 整理 Joint Macro/Standard cell Placement 和 Validation 的代码
 
----
+<br>
 
 # References
 
