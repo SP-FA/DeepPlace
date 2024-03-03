@@ -115,7 +115,6 @@ class Placememt():
     
     def cal_re_disjoint(self):
         wl = 0
-
         for net_name in self.net_info:
             nodes_in_net = self.net_info[net_name]["nodes"]
             if len(nodes_in_net) <= 1:
@@ -124,11 +123,14 @@ class Placememt():
             # collect pins in one macro-net
             pin_position_list = []  # all pins in one macro-net
             for node_name in nodes_in_net:
+                raw_center = [0, 0]
                 node_id = self.node_info[node_name]["id"]
-                center = self.results[node_id]  # (x, y)
+                center = self.results[node_id]
+                raw_center[0] = center[0] * self.chip_size[0] / self.n
+                raw_center[1] = center[1] * self.chip_size[1] / self.n
                 offset = [self.net_info[net_name]["nodes"][node_name]["x_offset"],
                           self.net_info[net_name]["nodes"][node_name]["y_offset"]]
-                pin_position = (center[0] + offset[0], center[1] + offset[1])
+                pin_position = (raw_center[0] + offset[0], raw_center[1] + offset[1])
                 pin_position_list.append(pin_position)
 
             left = self.chip_size[0]
@@ -140,8 +142,8 @@ class Placememt():
                 left = min(left, x)
                 up = min(up, y)
                 down = max(down, y)
-            wn = left - right
-            hn = down - up
+            wn = int(right - left + 1)
+            hn = int(down - up + 1)
             wl += wn + hn
         return wl
     
@@ -194,7 +196,7 @@ class Placememt():
     def search_overlap(self, x, y, _, __, depth):
         x = x.cuda()
         y = y.cuda()
-        ob = self.obs[0, 0]
+        ob = self.obs[0, 0].cuda()
         if ob[x, y] < 1.0:
             return x, y
         if depth > 7:

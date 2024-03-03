@@ -56,6 +56,12 @@
 python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --grid-num 84 --overlap --benchmark "adaptec3"
 ```
 
+### Macro Placement no Overlap
+
+```bash
+python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --grid-num 84 --benchmark "adaptec3"
+```
+
 **参数说明**
 
 - `num-steps`：该参数已被删除，因为可以计算得出，方式为：`num-steps = num-mini-batch * num-nodes`，其中 num-nodes 是 benchmark 中 macro 的数量
@@ -66,6 +72,12 @@ python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 
 ### 2.2 Validation
 ```bash
 python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --entropy-coef 0.01 --grid-num 84 --overlap --benchmark "adaptec3"
+```
+
+### Validation no Overlap
+
+```bash
+python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --entropy-coef 0.01 --grid-num 84 --benchmark "adaptec3"
 ```
 
 **参数说明**

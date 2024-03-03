@@ -157,7 +157,7 @@ def get_args():
     parser.add_argument(
         '--overlap',
         action='store_true',
-        default=True)
+        default=False)
     parser.add_argument(
         '--benchmark'
     )
@@ -248,7 +248,7 @@ def get_test_args():
     parser.add_argument(
         '--overlap',
         action='store_true',
-        default=True)
+        default=False)
     parser.add_argument(
         '--benchmark'
     )

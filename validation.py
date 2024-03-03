@@ -39,7 +39,7 @@ def main():
     device = torch.device("cuda:0")
 
     if args.task == 'place':
-        envs = place_envs(args.benchmark, args.num_grid, args.overlap)
+        envs = place_envs(args.benchmark, args.grid_num, args.overlap)
         actor_critic = torch.load("./trained_models/placement_300.pt")[0]
         actor_critic.to(device)
 
@@ -56,7 +56,7 @@ def main():
             eps=args.eps,
             max_grad_norm=args.max_grad_norm)
 
-    rollouts = RolloutStorage(args.num_steps, args.num_processes,
+    rollouts = RolloutStorage(num_steps, args.num_processes,
                               envs.obs_space, envs.action_space,
                               actor_critic.recurrent_hidden_state_size)
     obs = envs.reset()
