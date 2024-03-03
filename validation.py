@@ -38,9 +38,11 @@ def main():
     device = torch.device("cuda:0" if args.cuda else "cpu")
 
     if args.task == 'place':
-        envs = place_envs()
+        envs = place_envs(args.benchmark, args.num_grid, args.overlap)
         actor_critic = torch.load("./trained_models/placement_300.pt")[0]
         actor_critic.to(device)
+
+    num_steps = args.num_mini_batch * envs.steps
 
     agent = algo.PPO(
             actor_critic,
@@ -57,13 +59,13 @@ def main():
                               envs.obs_space, envs.action_space,
                               actor_critic.recurrent_hidden_state_size)
     obs = envs.reset()
-    rollouts.obs[0].copy_(envs.transform(obs))
+    rollouts.obs[0].copy_(obs)
     rollouts.to(device)
     episode_rewards = deque(maxlen=10)
 
-    features = torch.zeros(710, 2)
+    features = torch.zeros(envs.steps, 2)
 
-    for step in range(args.num_steps):
+    for step in range(num_steps):
         # Sample actions
         n = len(envs.results)
         with torch.no_grad():
@@ -73,12 +75,12 @@ def main():
 
         # Obser reward and next obs
         obs, done, reward = envs.step(action)
-        features[n][0] = action // 32
-        features[n][1] = action % 32
+        features[n][0] = action // args.grid_num
+        features[n][1] = action % args.grid_num
 
         if done:
             obs = envs.reset()
-            features = torch.zeros(710, 2)
+            features = torch.zeros(envs.steps, 2)
             print(reward)
 
 

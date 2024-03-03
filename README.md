@@ -25,21 +25,21 @@
 安装环境的过程中会出现很多很多很多的问题，我会尽量找到规避问题的方法，并且整理出来。注：只能在 linux 系统上运行。
 
 1. 安装 PyTorch
-    ```commandline
+    ```bash
     conda install pytorch torchvision -c soumith
     ```
 2. 安装 baselines
-    ```commandline
+    ```bash
     git clone https://github.com/openai/baselines.git
     cd baselines
     pip install -e .
     ```
 3. 安装其他 requirements
-    ```commandline
+    ```bash
     pip install -r requirements.txt
     ```
 4. 安装 dgl
-    ```commandline
+    ```bash
     conda install -c dglteam dgl-cuda10.2
     ```
 5. 安装 DreamPlace：[参考文章](https://blog.csdn.net/SP_FA/article/details/134887441?spm=1001.2014.3001.5501)（本项目已自带，无需安装）
@@ -53,15 +53,23 @@
 ### 2.1 Macro Placement
 
 ```bash
-python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1  --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --grid-num 84 --overlap True --benchmark "adaptec3"
+python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --grid-num 84 --overlap True --benchmark "adaptec3"
 ```
 
-### 2.2 参数说明：
+**参数说明**
 
 - `num-steps`：原项目中的该参数已被删除，由于可以通过计算得出，计算方式为：`num-steps = num-mini-batch * num-nodes`，其中 num-nodes 是 benchmark 中 macro 的数量
 - `grid-num`：默认值为 84，表示用于放置 macro 的 canvas 边长，此处与原文章略有不同，在下文中会详细解释。
 - `overlap`：是否允许 macro 之间重叠。
 - `benchmark`：使用哪个数据集
+
+### 2.2 Validation
+```bash
+python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --entropy-coef 0.01 --grid-num 84 --overlap True --benchmark "adaptec3"
+```
+
+**参数说明**
+- 同上
 
 
 [//]: # (### Joint Macro/Standard cell Placement)
@@ -73,23 +81,13 @@ python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 
 
 [//]: # (```)
 
-[//]: # ()
-[//]: # (### Validation)
-
-[//]: # ()
-[//]: # (```bash)
-
-[//]: # (python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --num-steps 710 --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --entropy-coef 0.01)
-
-[//]: # (```)
-
 <br>
 
 ## 3. 关于 DeepPlace-no-Overlap 的实现
 在实现过程中对代码做出了如下改动：
 1. 使用 maskplace 文章中的方法读取 benchmark 信息，并且按照 macro 从大到小的顺序作为放置顺序。
 2. 由于需要避免 macro 重叠，所以 canvas 要足够大。在原项目中，canvas 边长为 32，observation 边长为 84，canvas 通过上采样的方式与 observation 对齐。本项目将这两个的大小进行统一，都通过 grid-num 参数进行控制，默认为 84。
-3. 由于没有了 macro 之间的重叠，因此计算 reward 的时候也就可以不用考虑 Congestion，因此对计算 reward 的方法进行了修改。
+3. 由于没有了 macro 之间的重叠，因此计算 reward 的时候也就可以不用考虑 Congestion，同时为了和其他文章统一起来，计算 reward 时使用 macro 上的 pin 的位置（源代码中使用的是 macro 的位置）
 4. 为了保证正确性，我尽可能少的在原代码上进行修改，因此代码可能非常冗余，请多包含。
 
 <br>

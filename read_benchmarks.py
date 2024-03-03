@@ -26,7 +26,7 @@ def read_node_file(fopen, benchmark):
 
     if "ibm" in benchmark:
         sorted_node_info = sorted(node_info.items(), key=lambda x: x[1]['x'] * x[1]['y'], reverse=True)
-        node_info = dict(sorted_node_info)
+        node_info = dict(sorted_node_info[:256])
 
     print("len node_info", len(node_info))
     return node_info, node_info_raw_id_name
@@ -50,8 +50,12 @@ def read_net_file(fopen, node_info):
                     net_info[net_name]["nodes"] = {}
                     net_info[net_name]["ports"] = {}
                 if not node_name in net_info[net_name]["nodes"]:
-                    x_offset = float(line[-2])
-                    y_offset = float(line[-1])
+                    if len(line) == 2:
+                        x_offset = 0.0
+                        y_offset = 0.0
+                    else:
+                        x_offset = float(line[-2])
+                        y_offset = float(line[-1])
                     net_info[net_name]["nodes"][node_name] = {}
                     net_info[net_name]["nodes"][node_name] = {"x_offset": x_offset, "y_offset": y_offset}
     for net_name in list(net_info.keys()):
@@ -152,5 +156,5 @@ def generate_db_params(benchmark):
     node_id_to_name = get_node_id_to_name_topology(node_info)
 
     netlist = get_netlist(node_info, net_info)
-    return node_info, node_id_to_name, netlist, max_width, max_height
+    return node_info, net_info, node_id_to_name, netlist, [max_width, max_height]
     

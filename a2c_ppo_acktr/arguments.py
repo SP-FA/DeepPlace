@@ -152,9 +152,11 @@ def get_args():
     
     parser.add_argument(
         '--grid-num',
+        type=int,
         default=84)
     parser.add_argument(
         '--overlap',
+        action='store_true',
         default=True)
     parser.add_argument(
         '--benchmark'
@@ -238,6 +240,18 @@ def get_test_args():
         action='store_true',
         default=False,
         help='disables CUDA training')
+
+    parser.add_argument(
+        '--grid-num',
+        type=int,
+        default=84)
+    parser.add_argument(
+        '--overlap',
+        action='store_true',
+        default=True)
+    parser.add_argument(
+        '--benchmark'
+    )
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()

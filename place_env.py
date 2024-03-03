@@ -28,7 +28,7 @@ class Placememt():
         self.results = []
         self.best = -500
 
-        self.node_info, self.node_id_to_name, netlist, self.max_width, self.max_height = generate_db_params(benchmark)
+        self.node_info, self.net_info, self.node_id_to_name, netlist, self.chip_size = generate_db_params(benchmark)
         
         self.f = open("./result/result.txt", 'w')
 
@@ -38,7 +38,7 @@ class Placememt():
         
         self.steps = len(self.node_info)
         self.net = netlist
-        self.mask = torch.zeros((self.max_width, self.max_height))
+        self.mask = torch.zeros((self.chip_size[0], self.chip_size[1]))
         self.overlap = overlap
 
         if overlap:
@@ -61,7 +61,7 @@ class Placememt():
     
     def reset(self):
         self.obs = torch.zeros((1, 1, self.n, self.n))
-        self.mask = torch.zeros((self.max_width, self.max_height))
+        self.mask = torch.zeros((self.chip_size[0], self.chip_size[1]))
         return self.obs
     
     def to(self, device):
@@ -115,20 +115,35 @@ class Placememt():
     
     def cal_re_disjoint(self):
         wl = 0
-        for net in self.net:
-            left  = self.n - 1
-            right = 0
-            up    = self.n - 1
-            down  = 0
-            for i in net:
-                left  = min(left , self.results[i][1])
-                right = max(right, self.results[i][1])
-                up    = min(up   , self.results[i][0])
-                down  = max(down , self.results[i][0])
-            wn = int(right - left + 1)
-            hn = int(down - up + 1)
+
+        for net_name in self.net_info:
+            nodes_in_net = self.net_info[net_name]["nodes"]
+            if len(nodes_in_net) <= 1:
+                continue
+
+            # collect pins in one macro-net
+            pin_position_list = []  # all pins in one macro-net
+            for node_name in nodes_in_net:
+                node_id = self.node_info[node_name]["id"]
+                center = self.results[node_id]  # (x, y)
+                offset = [self.net_info[net_name]["nodes"][node_name]["x_offset"],
+                          self.net_info[net_name]["nodes"][node_name]["y_offset"]]
+                pin_position = (center[0] + offset[0], center[1] + offset[1])
+                pin_position_list.append(pin_position)
+
+            left = 0
+            right = self.chip_size[0]
+            up = self.chip_size[1]
+            down = 0
+            for (x, y) in pin_position_list:
+                right = min(right, x)
+                left = max(left, x)
+                up = min(up, y)
+                down = max(down, y)
+            wn = left - right
+            hn = down - up
             wl += wn + hn
-        return -wl
+        return wl
     
     def is_valid_disjoint(self, x, y, shift_w, shift_h):
         if -1 < x < self.n and -1 < y < self.n and -1 < x + shift_w < self.n and -1 < y + shift_h < self.n:

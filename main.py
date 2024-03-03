@@ -115,7 +115,7 @@ def main():
 
     features = torch.zeros(envs.steps, 2)
 
-    for j in range(800):
+    for j in range(3000):
 
         if args.use_linear_lr_decay:
             # decrease learning rate linearly
