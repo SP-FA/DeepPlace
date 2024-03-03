@@ -53,19 +53,19 @@
 ### 2.1 Macro Placement
 
 ```bash
-python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --grid-num 84 --overlap True --benchmark "adaptec3"
+python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --grid-num 84 --overlap --benchmark "adaptec3"
 ```
 
 **参数说明**
 
-- `num-steps`：原项目中的该参数已被删除，由于可以通过计算得出，计算方式为：`num-steps = num-mini-batch * num-nodes`，其中 num-nodes 是 benchmark 中 macro 的数量
+- `num-steps`：该参数已被删除，因为可以计算得出，方式为：`num-steps = num-mini-batch * num-nodes`，其中 num-nodes 是 benchmark 中 macro 的数量
 - `grid-num`：默认值为 84，表示用于放置 macro 的 canvas 边长，此处与原文章略有不同，在下文中会详细解释。
 - `overlap`：是否允许 macro 之间重叠。
 - `benchmark`：使用哪个数据集
 
 ### 2.2 Validation
 ```bash
-python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --entropy-coef 0.01 --grid-num 84 --overlap True --benchmark "adaptec3"
+python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --entropy-coef 0.01 --grid-num 84 --overlap --benchmark "adaptec3"
 ```
 
 **参数说明**
@@ -94,7 +94,7 @@ python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --lr 2.
 
 # Todo list
 1. 总结环境配置方法以及问题
-2. 整理 Joint Macro/Standard cell Placement 和 Validation 的代码
+2. 整理 Joint Macro/Standard cell Placement 的代码
 
 <br>
 

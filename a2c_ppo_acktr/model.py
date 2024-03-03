@@ -13,21 +13,15 @@ gcn_msg = fn.copy_u(u='h', out='m')
 gcn_reduce = fn.sum(msg='m', out='h')
 
 
-def build_graph(node_num):
-    path1 = dirname(dirname(abspath(__file__))) + '/data/edges_1.dat'
-    path2 = dirname(dirname(abspath(__file__))) + '/data/edges_2.dat'
-    f = open(path1, "r")
-    for line in f:
-        x1 = eval(line)
+def build_graph(node_num, netlist_graph):
+    edge1 = netlist_graph[0]
+    edge2 = netlist_graph[1]
 
-    f1 = open(path2, "r")
-    for line in f1:
-        x2 = eval(line)
     g = dgl.DGLGraph()
     g.add_nodes(node_num)
-    g.add_edges(x1, x2)
+    g.add_edges(edge1, edge2)
     # edges are directional in DGL; make them bi-directional
-    g.add_edges(x2, x1)
+    g.add_edges(edge2, edge1)
 
     return g
 
@@ -54,7 +48,7 @@ class Flatten(nn.Module):
 
 
 class Policy(nn.Module):
-    def __init__(self, obs_shape, node_num, action_space, base=None, base_kwargs=None):
+    def __init__(self, obs_shape, node_num, netlist_graph, action_space, base=None, base_kwargs=None):
         super(Policy, self).__init__()
         if base_kwargs is None:
             base_kwargs = {}
@@ -66,7 +60,7 @@ class Policy(nn.Module):
             else:
                 raise NotImplementedError
 
-        self.base = base(obs_shape[0], node_num, **base_kwargs)
+        self.base = base(obs_shape[0], node_num, netlist_graph, **base_kwargs)
 
         if action_space.__class__.__name__ == "Discrete":
             num_outputs = action_space.n
@@ -209,7 +203,7 @@ class NNBase(nn.Module):
 
 
 class CNNBase(NNBase):
-    def __init__(self, num_inputs, node_num, recurrent=False, hidden_size=512):
+    def __init__(self, num_inputs, node_num, netlist_graph, recurrent=False, hidden_size=512):
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
 
         init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
@@ -227,7 +221,7 @@ class CNNBase(NNBase):
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
         self.train()
-        self.g = build_graph(node_num).to('cuda:0')
+        self.g = build_graph(node_num, netlist_graph).to('cuda:0')
         self.layer1 = GCNLayer(2, 16)
         self.layer2 = GCNLayer(16, 32)
         self.layer4 = GCNLayer(32, 16)

@@ -116,7 +116,7 @@ def read_pl_file(fopen, node_info):
         max_width = max(max_width, node_info[node_name]["y"] + place_y)
         node_info[node_name]["raw_x"] = place_x
         node_info[node_name]["raw_y"] = place_y
-    return max(max_height, max_width), max(max_height, max_width)
+    return [max(max_height, max_width), max(max_height, max_width)]
 
 
 def get_node_id_to_name_topology(node_info):
@@ -139,7 +139,38 @@ def get_netlist(node_info, net_info):
         if len(nodes) > 1:
             netlist.append(nodes)
     return netlist
-        
+
+
+def get_dgl_edges(node_info, net_info):
+    edge1 = []
+    edge2 = []
+
+    for net_name in net_info:
+        nodes_in_net = net_info[net_name]["nodes"]
+        node_list = []
+        for node_name in nodes_in_net:
+            node_id = node_info[node_name]["id"]
+            node_list.append(node_id)
+        edge1.extend(node_list)
+        node_list.append(node_list.pop(0))
+        edge2.extend(node_list)
+
+    # print(f"{len(edge1) = }")
+    edge_dict = {}
+    for i, (a, b) in enumerate(zip(edge1, edge2)):
+        if (a, b) in edge_dict or (b, a) in edge_dict:
+            continue
+        else:
+            edge_dict[(a, b)] = i
+    sorted_edge_dict = sorted(edge_dict.items(), key=lambda x: x[1])
+    edge1 = [x for (x, _), __ in sorted_edge_dict]
+    edge2 = [x for (_, x), __ in sorted_edge_dict]
+    # print(f"{edge1 = }")
+    # print(f"{edge2 = }")
+    print(f"{len(edge1) = }")
+    print(f"{len(edge2) = }")
+    return [edge1, edge2]
+
     
 def generate_db_params(benchmark):
     nodesFilePath = os.path.join(".", benchmark, benchmark+".nodes")
@@ -152,9 +183,10 @@ def generate_db_params(benchmark):
     
     node_info, _ = read_node_file(nodes_fopen, benchmark)
     net_info = read_net_file(nets_fopen, node_info)
-    max_width, max_height = read_pl_file(pl_fopen, node_info)
+    chip_size = read_pl_file(pl_fopen, node_info)
     node_id_to_name = get_node_id_to_name_topology(node_info)
 
     netlist = get_netlist(node_info, net_info)
-    return node_info, net_info, node_id_to_name, netlist, [max_width, max_height]
+    netlist_graph = get_dgl_edges(node_info, net_info)
+    return node_info, net_info, node_id_to_name, netlist, netlist_graph, chip_size
     

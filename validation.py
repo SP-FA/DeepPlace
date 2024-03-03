@@ -25,7 +25,7 @@ def main():
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
 
-    if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
+    if torch.cuda.is_available() and args.cuda_deterministic:
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
 
@@ -35,7 +35,8 @@ def main():
     utils.cleanup_log_dir(eval_log_dir)
 
     torch.set_num_threads(1)
-    device = torch.device("cuda:0" if args.cuda else "cpu")
+    # device = torch.device("cuda:0" if args.cuda else "cpu")
+    device = torch.device("cuda:0")
 
     if args.task == 'place':
         envs = place_envs(args.benchmark, args.num_grid, args.overlap)

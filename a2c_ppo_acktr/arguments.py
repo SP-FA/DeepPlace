@@ -177,11 +177,11 @@ def get_test_args():
     parser = argparse.ArgumentParser(description='RL')
     parser.add_argument(
         '--task', default='place', help='task for testing')
-    parser.add_argument(
-        '--num-steps',
-        type=int,
-        default=5,
-        help='number of forward steps in A2C (default: 5)')
+    # parser.add_argument(
+    #     '--num-steps',
+    #     type=int,
+    #     default=5,
+    #     help='number of forward steps in A2C (default: 5)')
     parser.add_argument(
         '--num-processes',
         type=int,

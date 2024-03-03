@@ -28,7 +28,7 @@ class Placememt():
         self.results = []
         self.best = -500
 
-        self.node_info, self.net_info, self.node_id_to_name, netlist, self.chip_size = generate_db_params(benchmark)
+        self.node_info, self.net_info, self.node_id_to_name, netlist, self.netlist_graph, self.chip_size = generate_db_params(benchmark)
         
         self.f = open("./result/result.txt", 'w')
 
@@ -76,8 +76,8 @@ class Placememt():
         macro_w = cur_node_info["x"]
         macro_h = cur_node_info["y"]
         
-        shift_w = math.ceil(macro_w / self.max_width  * self.n)
-        shift_h = math.ceil(macro_h / self.max_height * self.n)
+        shift_w = math.ceil(macro_w / self.chip_size[0] * self.n)
+        shift_h = math.ceil(macro_h / self.chip_size[1] * self.n)
         # print(f"{len(self.results)=}")
         # print(f"{shift_w=}")
         # print(f"{shift_h=}")
@@ -131,13 +131,13 @@ class Placememt():
                 pin_position = (center[0] + offset[0], center[1] + offset[1])
                 pin_position_list.append(pin_position)
 
-            left = 0
-            right = self.chip_size[0]
+            left = self.chip_size[0]
+            right = 0
             up = self.chip_size[1]
             down = 0
             for (x, y) in pin_position_list:
-                right = min(right, x)
-                left = max(left, x)
+                right = max(right, x)
+                left = min(left, x)
                 up = min(up, y)
                 down = max(down, y)
             wn = left - right
@@ -187,7 +187,7 @@ class Placememt():
         return intrinsic_reward.item() / 100
 
     def is_valid_overlap(self, x, y, _, __):
-        if -1 < x < 32 and -1 < y < 32:
+        if -1 < x < self.n and -1 < y < self.n:
             return True
         return False
 
@@ -226,11 +226,11 @@ class Placememt():
 
     def cal_re_overlap(self):
         wl = 0
-        con = np.zeros((32, 32))
+        con = np.zeros((self.n, self.n))
         for net in self.net:
-            left = 31
+            left = self.n
             right = 0
-            up = 31
+            up = self.n
             down = 0
             for i in net:
                 left = min(left, self.results[i][1])
