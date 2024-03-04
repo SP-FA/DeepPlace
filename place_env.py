@@ -26,7 +26,7 @@ class Placememt():
         self.obs_space = (1, self.n, self.n)
         self.obs = torch.zeros((1, 1, self.n, self.n))
         self.results = []
-        self.best = -500
+        self.best = -1e9
 
         self.node_info, self.net_info, self.node_id_to_name, netlist, self.netlist_graph, self.chip_size = generate_db_params(benchmark)
         
@@ -145,7 +145,7 @@ class Placememt():
             wn = int(right - left + 1)
             hn = int(down - up + 1)
             wl += wn + hn
-        return wl
+        return -wl
     
     def is_valid_disjoint(self, x, y, shift_w, shift_h):
         if -1 < x < self.n and -1 < y < self.n and -1 < x + shift_w < self.n and -1 < y + shift_h < self.n:

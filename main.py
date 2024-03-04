@@ -116,6 +116,7 @@ def main():
         args.num_env_steps) // num_steps // args.num_processes
 
     features = torch.zeros(envs.steps, 2)
+    bestReward = -1e9
 
     for j in range(3000):
 
@@ -178,8 +179,11 @@ def main():
         rollouts.after_update()
 
         # save for every interval-th episode or for the last epoch
-        if (j % args.save_interval == 0
-                or j == num_updates - 1) and args.save_dir != "":
+        # if (j % args.save_interval == 0
+        #         or j == num_updates - 1) and args.save_dir != "":
+
+        # save the best model
+        if envs.best > bestReward:
             save_path = os.path.join(args.save_dir, args.algo)
             try:
                 os.makedirs(save_path)
@@ -189,6 +193,7 @@ def main():
                 actor_critic,
                 None
             ], "./trained_models/placement_" + str(j) + ".pt")
+            bestReward = envs.best
 
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * num_steps
