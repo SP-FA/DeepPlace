@@ -18,6 +18,23 @@ import math
 
 np.set_printoptions(threshold=np.inf)
 
+rnd = RNDModel((1, 1, 84, 84), 84 * 84)
+forward_mse = nn.MSELoss(reduction='none')
+optimizer = optim.Adam(rnd.predictor.parameters(), lr=5e-6)
+
+
+def compute_intrinsic_reward(rnd, next_obs):
+    next_obs = next_obs.cuda()
+    target_next_feature = rnd.target(next_obs)
+    predict_next_feature = rnd.predictor(next_obs)
+
+    forward_loss = forward_mse(predict_next_feature, target_next_feature).mean(-1)
+    intrinsic_reward = (target_next_feature - predict_next_feature).pow(2).sum(1) / 2
+    optimizer.zero_grad()
+    forward_loss.backward()
+
+    return intrinsic_reward.item() / 100
+
 
 class Placememt():
     def __init__(self, benchmark, grid_size=32, overlap=True):
@@ -51,9 +68,6 @@ class Placememt():
             self.find = self.find_disjoint
 
         self.seed()
-        self.rnd = RNDModel((1, 1, self.n, self.n), self.n * self.n)
-        self.forward_mse = nn.MSELoss(reduction='none')
-        self.optimizer = optim.Adam(self.rnd.predictor.parameters(), lr=5e-6)
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -110,7 +124,7 @@ class Placememt():
             self.results = []
         else:
             done = False
-            reward = self.compute_intrinsic_reward(obs / 255.0)
+            reward = compute_intrinsic_reward(rnd, obs / 255.0)
         return obs, done, torch.FloatTensor([[reward]])
     
     def cal_re_disjoint(self):
@@ -175,18 +189,6 @@ class Placememt():
                 if self.is_valid_disjoint(midx - x, midy + y, shift_w, shift_h): return midx - x, midy + y
                 if self.is_valid_disjoint(midx + x, midy - y, shift_w, shift_h): return midx + x, midy - y
                 if self.is_valid_disjoint(midx + x, midy + y, shift_w, shift_h): return midx + x, midy + y
-            
-    def compute_intrinsic_reward(self, next_obs):
-        next_obs = next_obs.cuda()
-        target_next_feature = self.rnd.target(next_obs)
-        predict_next_feature = self.rnd.predictor(next_obs)
-
-        forward_loss = self.forward_mse(predict_next_feature, target_next_feature).mean(-1)
-        intrinsic_reward = (target_next_feature - predict_next_feature).pow(2).sum(1) / 2
-        self.optimizer.zero_grad()
-        forward_loss.backward()
-
-        return intrinsic_reward.item() / 100
 
     def is_valid_overlap(self, x, y, _, __):
         if -1 < x < self.n and -1 < y < self.n:
