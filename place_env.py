@@ -7,23 +7,17 @@ import os
 import sys
 import logging
 from read_benchmarks import generate_db_params
+
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if root_dir not in sys.path:
     sys.path.append(root_dir)
-
-from rnd import RNDModel
-import torch.optim as optim
 
 import math
 
 np.set_printoptions(threshold=np.inf)
 
-rnd = RNDModel((1, 1, 84, 84), 84 * 84)
-forward_mse = nn.MSELoss(reduction='none')
-optimizer = optim.Adam(rnd.predictor.parameters(), lr=5e-6)
 
-
-def compute_intrinsic_reward(rnd, next_obs):
+def compute_intrinsic_reward(rnd, next_obs, forward_mse, optimizer):
     next_obs = next_obs.cuda()
     target_next_feature = rnd.target(next_obs)
     predict_next_feature = rnd.predictor(next_obs)
@@ -45,16 +39,20 @@ class Placememt():
         self.results = []
         self.best = -1e9
 
-        self.node_info, self.net_info, self.node_id_to_name, netlist, self.netlist_graph, self.chip_size = generate_db_params(benchmark)
-        
+        (self.node_info,
+         self.net_info,
+         self.node_id_to_name,
+         self.net,
+         self.netlist_graph,
+         self.chip_size) = generate_db_params(benchmark)
+
         self.f = open("./result/result.txt", 'w')
 
         # f = open("./data/n_edges_710.dat", "r")
         # for line in f:
         #     self.net = eval(line)
-        
+
         self.steps = len(self.node_info)
-        self.net = netlist
         self.mask = torch.zeros((self.chip_size[0], self.chip_size[1]))
         self.overlap = overlap
 
@@ -72,30 +70,30 @@ class Placememt():
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
-    
+
     def reset(self):
         self.obs = torch.zeros((1, 1, self.n, self.n))
         self.mask = torch.zeros((self.chip_size[0], self.chip_size[1]))
         return self.obs
-    
+
     def to(self, device):
         self.obs = self.obs.to(device)
-        
+
     # def transform(self, x):
     #     up = nn.Upsample(size=84, mode='bilinear', align_corners=False)
     #     return up(x)*255
-    
-    def step(self, action):
+
+    def step(self, action, rnd, mse, optim):
         cur_node_info = self.node_info[self.node_id_to_name[len(self.results)]]
         macro_w = cur_node_info["x"]
         macro_h = cur_node_info["y"]
-        
+
         shift_w = math.ceil(macro_w / self.chip_size[0] * self.n)
         shift_h = math.ceil(macro_h / self.chip_size[1] * self.n)
         # print(f"{len(self.results)=}")
         # print(f"{shift_w=}")
         # print(f"{shift_h=}")
-        
+
         x = action // self.n
         y = action % self.n
         x, y = self.search(x, y, shift_w, shift_h, 0)
@@ -105,8 +103,8 @@ class Placememt():
         if self.overlap:
             self.obs[0, 0, x, y] = 1
         else:
-            self.obs[0, 0, x:x+shift_w, y:y+shift_h] = 1
-            self.update_mask(x, y, shift_w,  shift_h)
+            self.obs[0, 0, x:x + shift_w, y:y + shift_h] = 1
+            self.update_mask(x, y, shift_w, shift_h)
         self.results.append([int(x), int(y)])
         # obs = self.transform(self.obs)
         obs = self.obs
@@ -124,9 +122,9 @@ class Placememt():
             self.results = []
         else:
             done = False
-            reward = compute_intrinsic_reward(rnd, obs / 255.0)
+            reward = compute_intrinsic_reward(rnd, obs / 255.0, mse, optim)
         return obs, done, torch.FloatTensor([[reward]])
-    
+
     def cal_re_disjoint(self):
         wl = 0
         for net_name in self.net_info:
@@ -159,26 +157,32 @@ class Placememt():
             wn = int(right - left + 1)
             hn = int(down - up + 1)
             wl += wn + hn
-        return -wl
-    
+        return -wl / 100000
+
     def is_valid_disjoint(self, x, y, shift_w, shift_h):
         if -1 < x < self.n and -1 < y < self.n and -1 < x + shift_w < self.n and -1 < y + shift_h < self.n:
-            if torch.sum(self.mask[x:x+shift_w, y:y+shift_h]) == 0:
+            if torch.sum(self.mask[x:x + shift_w, y:y + shift_h]) == 0:
                 return True
         return False
-    
+
     def update_mask(self, x, y, shift_w, shift_h):
         if -1 < x < self.n and -1 < y < self.n and -1 < x + shift_w < self.n and -1 < y + shift_h < self.n:
-            self.mask[x:x+shift_w, y:y+shift_h] = 1
+            self.mask[x:x + shift_w, y:y + shift_h] = 1
 
     def search_disjoint(self, x, y, shift_w, shift_h, depth):
         if self.is_valid_disjoint(x, y, shift_w, shift_h): return x, y
-        if depth > 7: return -1, -1
-        elif self.is_valid_disjoint(x - 1, y, shift_w, shift_h): return x - 1, y
-        elif self.is_valid_disjoint(x + 1, y, shift_w, shift_h): return x + 1, y
-        elif self.is_valid_disjoint(x, y - 1, shift_w, shift_h): return x, y - 1
-        elif self.is_valid_disjoint(x, y + 1, shift_w, shift_h): return x, y + 1
-        else: return self.search_disjoint(x - 1, y - 1, shift_w, shift_h, depth + 1)
+        if depth > 7:
+            return -1, -1
+        elif self.is_valid_disjoint(x - 1, y, shift_w, shift_h):
+            return x - 1, y
+        elif self.is_valid_disjoint(x + 1, y, shift_w, shift_h):
+            return x + 1, y
+        elif self.is_valid_disjoint(x, y - 1, shift_w, shift_h):
+            return x, y - 1
+        elif self.is_valid_disjoint(x, y + 1, shift_w, shift_h):
+            return x, y + 1
+        else:
+            return self.search_disjoint(x - 1, y - 1, shift_w, shift_h, depth + 1)
 
     def find_disjoint(self, shift_w, shift_h):
         midx = midy = self.n // 2
@@ -219,13 +223,17 @@ class Placememt():
         ob = self.obs[0, 0]
         for i in range(self.n):
             for j in range(i):
-                if self.is_valid_overlap(center[0] - j, center[1] - (i - j), _, __) and ob[center[0] - j, center[1] - (i - j)] < 1.0:
+                if self.is_valid_overlap(center[0] - j, center[1] - (i - j), _, __) and ob[
+                    center[0] - j, center[1] - (i - j)] < 1.0:
                     return center[0] - j, center[1] - (i - j)
-                if self.is_valid_overlap(center[0] - j, center[1] + (i - j), _, __) and ob[center[0] - j, center[1] + (i - j)] < 1.0:
+                if self.is_valid_overlap(center[0] - j, center[1] + (i - j), _, __) and ob[
+                    center[0] - j, center[1] + (i - j)] < 1.0:
                     return center[0] - j, center[1] + (i - j)
-                if self.is_valid_overlap(center[0] + j, center[1] - (i - j), _, __) and ob[center[0] + j, center[1] - (i - j)] < 1.0:
+                if self.is_valid_overlap(center[0] + j, center[1] - (i - j), _, __) and ob[
+                    center[0] + j, center[1] - (i - j)] < 1.0:
                     return center[0] + j, center[1] - (i - j)
-                if self.is_valid_overlap(center[0] + j, center[1] + (i - j), _, __) and ob[center[0] + j, center[1] + (i - j)] < 1.0:
+                if self.is_valid_overlap(center[0] + j, center[1] + (i - j), _, __) and ob[
+                    center[0] + j, center[1] + (i - j)] < 1.0:
                     return center[0] + j, center[1] + (i - j)
 
     def cal_re_overlap(self):

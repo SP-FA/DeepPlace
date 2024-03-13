@@ -12,7 +12,7 @@ class Flatten(nn.Module):
 
 
 class RNDModel(nn.Module):
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, device="cuda:0"):
         super(RNDModel, self).__init__()
 
         self.input_size = input_size
@@ -32,7 +32,7 @@ class RNDModel(nn.Module):
             nn.Linear(512, 512),
             # nn.ReLU(),
             # nn.Linear(512, 512)
-        ).cuda()
+        ).to(device)
 
         self.target = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=8, stride=4),
@@ -43,7 +43,7 @@ class RNDModel(nn.Module):
             nn.LeakyReLU(),
             Flatten(),
             nn.Linear(feature_output, 512)
-        ).cuda()
+        ).to(device)
 
         # Initialize weights    
         for m in self.modules():

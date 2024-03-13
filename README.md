@@ -69,6 +69,8 @@ python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 
 - `grid-num`：默认值为 84，表示用于放置 macro 的 canvas 边长，此处与原文章略有不同，在下文中会详细解释。
 - `overlap`：是否允许 macro 之间重叠。
 - `benchmark`：使用哪个数据集
+- `no-cuda` 和 `cuda`：原项目只能在 cpu 和 cuda:0 中选择，为了支持多个显卡，把这两个参数删除。
+- `device`：默认为 cuda:0，可以选择 cpu 或者 cuda:1 等
 
 ### 2.2 Validation
 ```bash

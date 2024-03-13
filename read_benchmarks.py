@@ -167,8 +167,8 @@ def get_dgl_edges(node_info, net_info):
     edge2 = [x for (_, x), __ in sorted_edge_dict]
     # print(f"{edge1 = }")
     # print(f"{edge2 = }")
-    print(f"{len(edge1) = }")
-    print(f"{len(edge2) = }")
+    # print(f"{len(edge1) = }")
+    # print(f"{len(edge2) = }")
     return [edge1, edge2]
 
     

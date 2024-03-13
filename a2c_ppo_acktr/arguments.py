@@ -129,11 +129,11 @@ def get_args():
         '--save-dir',
         default='./trained_models/',
         help='directory to save agent logs (default: ./trained_models/)')
-    parser.add_argument(
-        '--no-cuda',
-        action='store_true',
-        default=False,
-        help='disables CUDA training')
+    # parser.add_argument(
+    #     '--no-cuda',
+    #     action='store_true',
+    #     default=False,
+    #     help='disables CUDA training')
     parser.add_argument(
         '--use-proper-time-limits',
         action='store_true',
@@ -161,10 +161,14 @@ def get_args():
     parser.add_argument(
         '--benchmark'
     )
+    parser.add_argument(
+        '--device',
+        default='cuda:0'
+    )
     
     args = parser.parse_args()
 
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    # args.cuda = not args.no_cuda and torch.cuda.is_available()
 
     assert args.algo in ['a2c', 'ppo', 'acktr']
     if args.recurrent_policy:
@@ -235,11 +239,11 @@ def get_test_args():
         '--log-dir',
         default='/tmp/gym/',
         help='directory to save agent logs (default: /tmp/gym)')
-    parser.add_argument(
-        '--no-cuda',
-        action='store_true',
-        default=False,
-        help='disables CUDA training')
+    # parser.add_argument(
+    #     '--no-cuda',
+    #     action='store_true',
+    #     default=False,
+    #     help='disables CUDA training')
 
     parser.add_argument(
         '--grid-num',
@@ -252,8 +256,12 @@ def get_test_args():
     parser.add_argument(
         '--benchmark'
     )
+    parser.add_argument(
+        '--device',
+        default='cuda:0'
+    )
     args = parser.parse_args()
 
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    # args.cuda = not args.no_cuda and torch.cuda.is_available()
     return args
         

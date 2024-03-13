@@ -48,8 +48,9 @@ class Flatten(nn.Module):
 
 
 class Policy(nn.Module):
-    def __init__(self, obs_shape, node_num, netlist_graph, action_space, base=None, base_kwargs=None):
+    def __init__(self, obs_shape, node_num, netlist_graph, action_space, device="cuda:0", base=None, base_kwargs=None):
         super(Policy, self).__init__()
+        # self.device = device
         if base_kwargs is None:
             base_kwargs = {}
         if base is None:
@@ -60,7 +61,7 @@ class Policy(nn.Module):
             else:
                 raise NotImplementedError
 
-        self.base = base(obs_shape[0], node_num, netlist_graph, **base_kwargs)
+        self.base = base(obs_shape[0], node_num, netlist_graph, device, **base_kwargs)
 
         if action_space.__class__.__name__ == "Discrete":
             num_outputs = action_space.n
@@ -203,9 +204,9 @@ class NNBase(nn.Module):
 
 
 class CNNBase(NNBase):
-    def __init__(self, num_inputs, node_num, netlist_graph, recurrent=False, hidden_size=512):
+    def __init__(self, num_inputs, node_num, netlist_graph, device, recurrent=False, hidden_size=512):
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
-
+        self.device = device
         init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
                                constant_(x, 0), nn.init.calculate_gain('relu'))
 
@@ -221,14 +222,14 @@ class CNNBase(NNBase):
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
         self.train()
-        self.g = build_graph(node_num, netlist_graph).to('cuda:0')
+        self.g = build_graph(node_num, netlist_graph).to(device)
         self.layer1 = GCNLayer(2, 16)
         self.layer2 = GCNLayer(16, 32)
         self.layer4 = GCNLayer(32, 16)
 
     def forward(self, inputs, rnn_hxs, masks, features, n, flag=True):
         x = self.main(inputs / 255.0)
-        features = features.cuda()
+        features = features.to(self.device)
         x1 = F.relu(self.layer1(self.g, features))
         x2 = F.relu(self.layer2(self.g, x1))
         if flag:
