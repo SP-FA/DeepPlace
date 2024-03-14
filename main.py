@@ -1,16 +1,8 @@
-import copy
-import glob
 import os
 import time
 from collections import deque
-
-import gym
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-import torch.optim as optim
 
 from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.algo import gail
@@ -29,7 +21,10 @@ args = get_args()
 
 rnd = RNDModel((1, 1, args.grid_num, args.grid_num), args.grid_num * args.grid_num, args.device)
 forward_mse = nn.MSELoss(reduction='none')
-optimizer = optim.Adam(rnd.predictor.parameters(), lr=5e-6)
+if args.task == 'place':
+    optimizer = optim.Adam(rnd.predictor.parameters(), lr=5e-6)
+elif args.task == 'fullplace':
+    optimizer = optim.Adam(rnd.predictor.parameters(), lr=2e-6)
 
 
 def main(args):
@@ -126,7 +121,7 @@ def main(args):
     features = torch.zeros(envs.steps, 2)
     bestReward = -1e9
 
-    for j in range(3000):
+    for j in range(750):
 
         if args.use_linear_lr_decay:
             # decrease learning rate linearly

@@ -31,7 +31,7 @@ def plot_coords(ax, ob, color=GRAY, zorder=1, alpha=1):
 
 
 def color_isvalid(ob, valid=BLUE, invalid=RED):
-    if ob.is_valid_disjoint:
+    if ob.is_valid:
         return valid
     else:
         return invalid

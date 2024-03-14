@@ -39,7 +39,7 @@ def plot_coords(ax, ob, color=GRAY, zorder=1, alpha=1):
 
 
 def color_isvalid(ob, valid=BLUE, invalid=RED):
-    if ob.is_valid_disjoint:
+    if ob.is_valid:
         return valid
     else:
         return invalid
@@ -162,7 +162,7 @@ def slice_non_fence_region(
         x_h = xh if i == xs.size(0) else xs[i]
         cvx_hull = box(x_l, yl, x_h, yh)
 
-        if x_l >= x_h or not cvx_hull.is_valid_disjoint:
+        if x_l >= x_h or not cvx_hull.is_valid:
             continue
         intersect = non_fence_region.intersection(cvx_hull)
 

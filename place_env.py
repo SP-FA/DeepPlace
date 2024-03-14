@@ -1,87 +1,43 @@
-from gym.spaces import Discrete
 import torch
-import torch.nn as nn
 import numpy as np
-from gym.utils import seeding
+
 import os
 import sys
-import logging
-from read_benchmarks import generate_db_params
+import math
+
+from base_placement.no_overlap_base import BasePlacement_NoOverlap
+from base_placement.overlap_base import BasePlacement_Overlap
 
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if root_dir not in sys.path:
     sys.path.append(root_dir)
 
-import math
 
 np.set_printoptions(threshold=np.inf)
 
 
-def compute_intrinsic_reward(rnd, next_obs, forward_mse, optimizer):
+def compute_intrinsic_reward(rnd, next_obs, mse, optim):
     next_obs = next_obs.cuda()
     target_next_feature = rnd.target(next_obs)
     predict_next_feature = rnd.predictor(next_obs)
 
-    forward_loss = forward_mse(predict_next_feature, target_next_feature).mean(-1)
+    forward_loss = mse(predict_next_feature, target_next_feature).mean(-1)
     intrinsic_reward = (target_next_feature - predict_next_feature).pow(2).sum(1) / 2
-    optimizer.zero_grad()
+    optim.zero_grad()
     forward_loss.backward()
 
     return intrinsic_reward.item() / 100
 
 
-class Placememt():
+class Placememt(BasePlacement_Overlap, BasePlacement_NoOverlap):
     def __init__(self, benchmark, grid_size=32, overlap=True):
-        self.n = grid_size
-        self.action_space = Discrete(self.n * self.n)
-        self.obs_space = (1, self.n, self.n)
-        self.obs = torch.zeros((1, 1, self.n, self.n))
-        self.results = []
-        self.best = -1e9
-
-        (self.node_info,
-         self.net_info,
-         self.node_id_to_name,
-         self.net,
-         self.netlist_graph,
-         self.chip_size) = generate_db_params(benchmark)
-
-        self.f = open("./result/result.txt", 'w')
-
-        # f = open("./data/n_edges_710.dat", "r")
-        # for line in f:
-        #     self.net = eval(line)
-
-        self.steps = len(self.node_info)
-        self.mask = torch.zeros((self.chip_size[0], self.chip_size[1]))
-        self.overlap = overlap
-
         if overlap:
+            super(BasePlacement_Overlap  , self).__init__(benchmark, grid_size)
             self.cal_re = self.cal_re_overlap
-            self.search = self.search_overlap
-            self.find = self.find_overlap
         else:
+            super(BasePlacement_NoOverlap, self).__init__(benchmark, grid_size)
             self.cal_re = self.cal_re_disjoint
-            self.search = self.search_disjoint
-            self.find = self.find_disjoint
-
-        self.seed()
-
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
-
-    def reset(self):
-        self.obs = torch.zeros((1, 1, self.n, self.n))
-        self.mask = torch.zeros((self.chip_size[0], self.chip_size[1]))
-        return self.obs
-
-    def to(self, device):
-        self.obs = self.obs.to(device)
-
-    # def transform(self, x):
-    #     up = nn.Upsample(size=84, mode='bilinear', align_corners=False)
-    #     return up(x)*255
+        self.overlap = overlap
 
     def step(self, action, rnd, mse, optim):
         cur_node_info = self.node_info[self.node_id_to_name[len(self.results)]]
@@ -114,8 +70,13 @@ class Placememt():
             reward = self.cal_re()
             if reward > self.best:
                 self.best = reward
+                pl = []
+                for res in self.results:
+                    x = res[0] / self.n * self.chip_size[0]
+                    y = res[1] / self.n * self.chip_size[1]
+                    pl.append([int(x), int(y)])
                 self.f.write(str(self.obs))
-                self.f.write(str(self.results))
+                self.f.write(str(pl))
                 self.f.write('\n')
                 self.f.write(str(reward))
                 self.f.write('\n')
@@ -124,6 +85,8 @@ class Placememt():
             done = False
             reward = compute_intrinsic_reward(rnd, obs / 255.0, mse, optim)
         return obs, done, torch.FloatTensor([[reward]])
+
+#################################################### No Overlap ########################################################
 
     def cal_re_disjoint(self):
         wl = 0
@@ -159,82 +122,7 @@ class Placememt():
             wl += wn + hn
         return -wl / 100000
 
-    def is_valid_disjoint(self, x, y, shift_w, shift_h):
-        if -1 < x < self.n and -1 < y < self.n and -1 < x + shift_w < self.n and -1 < y + shift_h < self.n:
-            if torch.sum(self.mask[x:x + shift_w, y:y + shift_h]) == 0:
-                return True
-        return False
-
-    def update_mask(self, x, y, shift_w, shift_h):
-        if -1 < x < self.n and -1 < y < self.n and -1 < x + shift_w < self.n and -1 < y + shift_h < self.n:
-            self.mask[x:x + shift_w, y:y + shift_h] = 1
-
-    def search_disjoint(self, x, y, shift_w, shift_h, depth):
-        if self.is_valid_disjoint(x, y, shift_w, shift_h): return x, y
-        if depth > 7:
-            return -1, -1
-        elif self.is_valid_disjoint(x - 1, y, shift_w, shift_h):
-            return x - 1, y
-        elif self.is_valid_disjoint(x + 1, y, shift_w, shift_h):
-            return x + 1, y
-        elif self.is_valid_disjoint(x, y - 1, shift_w, shift_h):
-            return x, y - 1
-        elif self.is_valid_disjoint(x, y + 1, shift_w, shift_h):
-            return x, y + 1
-        else:
-            return self.search_disjoint(x - 1, y - 1, shift_w, shift_h, depth + 1)
-
-    def find_disjoint(self, shift_w, shift_h):
-        midx = midy = self.n // 2
-        for r in range(self.n):
-            for x in range(r):
-                y = r - x
-                if self.is_valid_disjoint(midx - x, midy - y, shift_w, shift_h): return midx - x, midy - y
-                if self.is_valid_disjoint(midx - x, midy + y, shift_w, shift_h): return midx - x, midy + y
-                if self.is_valid_disjoint(midx + x, midy - y, shift_w, shift_h): return midx + x, midy - y
-                if self.is_valid_disjoint(midx + x, midy + y, shift_w, shift_h): return midx + x, midy + y
-
-    def is_valid_overlap(self, x, y, _, __):
-        if -1 < x < self.n and -1 < y < self.n:
-            return True
-        return False
-
-    def search_overlap(self, x, y, _, __, depth):
-        x = x.cuda()
-        y = y.cuda()
-        ob = self.obs[0, 0].cuda()
-        if ob[x, y] < 1.0:
-            return x, y
-        if depth > 7:
-            return -1, -1
-        elif x - 1 >= 0 and ob[x - 1, y] < 1.0:
-            return x - 1, y
-        elif x + 1 < self.n and ob[x + 1, y] < 1.0:
-            return x + 1, y
-        elif y - 1 >= 0 and ob[x, y - 1] < 1.0:
-            return x, y - 1
-        elif y + 1 < self.n and ob[x, y + 1] < 1.0:
-            return x, y + 1
-        else:
-            return self.search_overlap(x - 1, y - 1, _, __, depth + 1)
-
-    def find_overlap(self, _, __):
-        center = [self.n // 2, self.n // 2]
-        ob = self.obs[0, 0]
-        for i in range(self.n):
-            for j in range(i):
-                if self.is_valid_overlap(center[0] - j, center[1] - (i - j), _, __) and ob[
-                    center[0] - j, center[1] - (i - j)] < 1.0:
-                    return center[0] - j, center[1] - (i - j)
-                if self.is_valid_overlap(center[0] - j, center[1] + (i - j), _, __) and ob[
-                    center[0] - j, center[1] + (i - j)] < 1.0:
-                    return center[0] - j, center[1] + (i - j)
-                if self.is_valid_overlap(center[0] + j, center[1] - (i - j), _, __) and ob[
-                    center[0] + j, center[1] - (i - j)] < 1.0:
-                    return center[0] + j, center[1] - (i - j)
-                if self.is_valid_overlap(center[0] + j, center[1] + (i - j), _, __) and ob[
-                    center[0] + j, center[1] + (i - j)] < 1.0:
-                    return center[0] + j, center[1] + (i - j)
+##################################################### Overlap ##########################################################
 
     def cal_re_overlap(self):
         wl = 0
