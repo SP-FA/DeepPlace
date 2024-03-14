@@ -10,6 +10,8 @@
 > 
 > [文章速通](https://blog.csdn.net/SP_FA/article/details/134083867?csdn_share_tail=%7B%22type%22%3A%22blog%22%2C%22rType%22%3A%22article%22%2C%22rId%22%3A%22134083867%22%2C%22source%22%3A%22SP_FA%22%7D)
 
+<center><img src="img/bg.jpg"></center>
+
 <br>
 
 # 关于此项目
@@ -138,6 +140,7 @@ python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --lr 2.
 1. 总结环境配置方法以及问题
 2. 整理 Joint Macro/Standard cell Placement 的代码 [待验证]
 3. 把放置结果的实际位置保存下来 [Done]
+4. 整理项目文件
 
 <br>
 
