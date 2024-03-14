@@ -28,21 +28,22 @@
     ```bash
     conda install pytorch torchvision -c soumith
     ```
-2. 安装 baselines
+2. 安装 tensorflow
+3. 安装 baselines
     ```bash
     git clone https://github.com/openai/baselines.git
     cd baselines
     pip install -e .
     ```
-3. 安装其他 requirements
+4. 安装其他 requirements
     ```bash
     pip install -r requirements.txt
     ```
-4. 安装 dgl
+5. 安装 dgl
     ```bash
     conda install -c dglteam dgl-cuda10.2
     ```
-5. 安装 DreamPlace：[参考文章](https://blog.csdn.net/SP_FA/article/details/134887441?spm=1001.2014.3001.5501)（本项目已自带，无需安装）
+6. 安装 DreamPlace：[参考文章](https://blog.csdn.net/SP_FA/article/details/134887441?spm=1001.2014.3001.5501)（本项目已自带，无需安装）
 
 <br>
 
@@ -56,7 +57,7 @@
 python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --grid-num 84 --overlap --benchmark "adaptec3"
 ```
 
-### Macro Placement no Overlap
+### no Overlap
 
 ```bash
 python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --grid-num 84 --benchmark "adaptec3"
@@ -72,29 +73,46 @@ python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 
 - `no-cuda` 和 `cuda`：原项目只能在 cpu 和 cuda:0 中选择，为了支持多个显卡，把这两个参数删除。
 - `device`：默认为 cuda:0，可以选择 cpu 或者 cuda:1 等
 
-### 2.2 Validation
+[//]: # (### 2.2 Joint Macro / Standard cell Placement)
+
+[//]: # ()
+[//]: # (```bash)
+
+[//]: # (python main.py --task "fullplace" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --grid-num 84 --overlap --benchmark "adaptec3")
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (### no Overlap )
+
+[//]: # ()
+[//]: # (```bash)
+
+[//]: # (python main.py --task "place" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01 --grid-num 84 --benchmark "adaptec3")
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (**参数说明**)
+
+[//]: # ()
+[//]: # (- 同上)
+
+### 2.3 Validation
 ```bash
 python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --entropy-coef 0.01 --grid-num 84 --overlap --benchmark "adaptec3"
 ```
 
-### Validation no Overlap
+### no Overlap
 
 ```bash
 python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --entropy-coef 0.01 --grid-num 84 --benchmark "adaptec3"
 ```
 
 **参数说明**
-- 同上
 
-
-[//]: # (### Joint Macro/Standard cell Placement)
-
-[//]: # ()
-[//]: # (```bash)
-
-[//]: # (python DeepPlace/main.py --task "fullplace" --algo ppo --use-gae --lr 2.5e-4 --clip-param 0.1 --value-loss-coef 0.5 --num-processes 1 --num-steps 2840 --num-mini-batch 4 --log-interval 1 --use-linear-lr-decay --entropy-coef 0.01)
-
-[//]: # (```)
+- `task`：删除，因为 validation 只能支持 macro 放置
+- 其余同上
 
 <br>
 
@@ -118,7 +136,8 @@ python validation.py --task "place" --num-processes 1 --num-mini-batch 1 --lr 2.
 
 # Todo list
 1. 总结环境配置方法以及问题
-2. 整理 Joint Macro/Standard cell Placement 的代码
+2. 整理 Joint Macro/Standard cell Placement 的代码 [待验证]
+3. 把放置结果的实际位置保存下来 [Done]
 
 <br>
 

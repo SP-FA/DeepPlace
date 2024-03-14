@@ -1,6 +1,8 @@
 import os
 import time
 from collections import deque
+
+import gym
 import torch
 import torch.nn as nn
 
